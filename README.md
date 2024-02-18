@@ -7,7 +7,7 @@
 ## Create new libraries
 
 ```bash
-nx g @nrwl/nest:lib <package-name> --buildable --publishable --importPath=@nest-libs/<package-name>
+nx g @nrwl/nest:lib <package-name> --buildable --publishable --importPath=nestlibs-<package-name>
 ```
 
 ## Generate code

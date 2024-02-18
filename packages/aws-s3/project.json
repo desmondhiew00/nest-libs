@@ -1,0 +1,24 @@
+{
+  "name": "aws-s3",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/aws-s3/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/aws-s3",
+        "tsConfig": "packages/aws-s3/tsconfig.lib.json",
+        "packageJson": "packages/aws-s3/package.json",
+        "main": "packages/aws-s3/src/index.ts",
+        "assets": ["packages/aws-s3/*.md"]
+      }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs aws-s3 {args.ver} {args.tag}",
+      "dependsOn": ["build"]
+    }
+  },
+  "tags": []
+}

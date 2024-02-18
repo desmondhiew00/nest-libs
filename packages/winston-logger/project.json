@@ -1,18 +1,18 @@
 {
   "name": "winston-logger",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "pacakges/winston-logger/src",
+  "sourceRoot": "packages/winston-logger/src",
   "projectType": "library",
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/pacakges/winston-logger",
-        "tsConfig": "pacakges/winston-logger/tsconfig.lib.json",
-        "packageJson": "pacakges/winston-logger/package.json",
-        "main": "pacakges/winston-logger/src/index.ts",
-        "assets": ["pacakges/winston-logger/*.md"]
+        "outputPath": "dist/packages/winston-logger",
+        "tsConfig": "packages/winston-logger/tsconfig.lib.json",
+        "packageJson": "packages/winston-logger/package.json",
+        "main": "packages/winston-logger/src/index.ts",
+        "assets": ["packages/winston-logger/*.md"]
       }
     },
     "publish": {
