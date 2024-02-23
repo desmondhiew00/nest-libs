@@ -1,0 +1,24 @@
+{
+  "name": "jwt-auth",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/jwt-auth/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/jwt-auth",
+        "tsConfig": "packages/jwt-auth/tsconfig.lib.json",
+        "packageJson": "packages/jwt-auth/package.json",
+        "main": "packages/jwt-auth/src/index.ts",
+        "assets": ["packages/jwt-auth/*.md"]
+      }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs jwt-auth {args.ver} {args.tag}",
+      "dependsOn": ["build"]
+    }
+  },
+  "tags": []
+}
