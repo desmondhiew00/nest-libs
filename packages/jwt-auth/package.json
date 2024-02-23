@@ -1,6 +1,6 @@
 {
   "name": "nestlibs-jwt-auth",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": {
     "@nestjs/graphql": "^12.1.1",
     "@nestjs/jwt": "^10.2.0",
