@@ -1,6 +1,6 @@
 {
   "name": "nestlibs-aws-s3",
-  "version": "0.1.2",
+  "version": "0.1.0",
   "dependencies": {
     "mime-types": "^2.1.35",
     "tslib": "^2.3.0",
@@ -16,8 +16,12 @@
   "main": "./src/index.js",
   "typings": "./src/index.d.ts",
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.521.0",
+    "@aws-sdk/lib-storage": "^3.521.0",
+    "@aws-sdk/s3-request-presigner": "^3.521.0",
     "@types/mime-types": "^2.1.4",
     "@types/multer": "^1.4.11",
-    "@types/uuid": "^9.0.8"
+    "@types/uuid": "^9.0.8",
+    "graphql-upload-minimal": "^1.6.0"
   }
 }
