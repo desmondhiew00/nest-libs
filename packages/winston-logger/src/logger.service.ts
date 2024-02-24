@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  LoggerService as NestLogger,
-} from '@nestjs/common';
+import { Injectable, LoggerService as NestLogger } from '@nestjs/common';
 import * as winston from 'winston';
 import 'winston-daily-rotate-file';
 
@@ -10,30 +7,23 @@ export type LogError = string | Error;
 export interface Options extends winston.LoggerOptions {
   logMaxSize?: string;
   logMaxFiles?: string;
+  verify?: (message: LogError) => LogError | Promise<LogError> | null;
 }
 
 @Injectable()
 export class LoggerService implements NestLogger {
-  private logger: winston.Logger;
+  public logger: winston.Logger;
   private logMaxSize = '20m';
   private logMaxFiles = '30d';
 
-  private readonly excludeContexts = new Set([
-    'NestApplication',
-    'NestFactory',
-    'RoutesResolver',
-    'RouterExplorer',
-    'GraphQLModule',
-  ]);
-  private readonly excludeExceptions = new Set([
-    'NotFoundException',
-    'UnauthorizedException',
-    'ForbiddenException',
-  ]);
+  private verify:
+    | ((message: LogError) => LogError | Promise<LogError> | null)
+    | null = null;
 
   constructor(appName: string, options?: Options) {
     const dirname = `logs${appName ? `/${appName}` : ''}`;
 
+    if (options?.verify) this.verify = options.verify;
     if (options?.logMaxSize) this.logMaxSize = options.logMaxSize;
     if (options?.logMaxFiles) this.logMaxFiles = options.logMaxFiles;
 
@@ -62,7 +52,11 @@ export class LoggerService implements NestLogger {
     );
   }
 
-  private createRotateTransport(level: string, filename: string, dirname: string) {
+  private createRotateTransport(
+    level: string,
+    filename: string,
+    dirname: string
+  ) {
     return new winston.transports.DailyRotateFile({
       level,
       datePattern: 'YYYY-MM-DD',
@@ -86,41 +80,35 @@ export class LoggerService implements NestLogger {
     });
   }
 
-  private shouldExcludeContext(context?: string): boolean {
-    return context ? this.excludeContexts.has(context) : false;
+  private getLogMessage(message: LogError) {
+    return this.verify ? this.verify(message) || message : message;
   }
 
-  private shouldExcludeException(exception?: string): boolean {
-    return exception ? this.excludeExceptions.has(exception) : false;
+  public log(message: LogError) {
+    this.logger.info(this.getLogMessage(message));
   }
 
-  public log(message: LogError, context?: string) {
-    if (this.shouldExcludeContext(context)) return;
-    this.logger.info(message.toString());
+  public info(message: LogError) {
+    this.logger.info(this.getLogMessage(message));
   }
 
   public error(message: LogError, trace?: string) {
-    if (message instanceof Error) {
-      message = message.message;
-    }
-
+    const logMsg = this.getLogMessage(message);
     const exception = trace?.split(':')[0];
-    if (this.shouldExcludeException(exception)) {
-      trace = undefined;
-    }
-
-    this.logger.error(`${exception ? `[${exception}] ` : ''}${message}`, { stack: trace });
+    this.logger.error(`${exception ? `[${exception}] ` : ''}${logMsg}`, {
+      stack: trace,
+    });
   }
 
   public warn(message: LogError) {
-    this.logger.warn(message.toString());
+    this.logger.warn(this.getLogMessage(message));
   }
 
   public debug(message: LogError) {
-    this.logger.debug(message.toString());
+    this.logger.debug(this.getLogMessage(message));
   }
 
   public verbose(message: LogError) {
-    this.logger.verbose(message.toString());
+    this.logger.verbose(this.getLogMessage(message));
   }
 }
