@@ -15,9 +15,9 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@nest-libs/winston-logger": ["packages/winston-logger/src/index.ts"],
       "nestlibs-aws-s3": ["packages/aws-s3/src/index.ts"],
-      "nestlibs-jwt-auth": ["packages/jwt-auth/src/index.ts"]
+      "nestlibs-jwt-auth": ["packages/jwt-auth/src/index.ts"],
+      "nestlibs/winston-logger": ["packages/winston-logger/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
