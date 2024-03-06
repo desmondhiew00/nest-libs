@@ -48,6 +48,13 @@ Have a look at the [Nx Console extensions](https://nx.dev/nx-console). It provid
 
 Just run `nx build demoapp` to build the application. The build artifacts will be stored in the `dist/` directory, ready to be deployed.
 
+## Publish to npm
+
+```bash
+cd `dist/packages/<package-name>`
+npm publish --tag=latest
+```
+
 ## Set up CI
 
 Nx comes with local caching already built-in (check your `nx.json`). On CI you might want to go a step further.

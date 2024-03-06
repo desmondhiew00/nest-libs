@@ -16,6 +16,7 @@ import { Injectable } from '@nestjs/common';
 import { FileUpload } from 'graphql-upload-minimal';
 import * as mime from 'mime-types';
 import 'multer';
+import * as path from 'path';
 
 export interface S3UploadConfig {
   prefix?: string; // Exp: dev, prod, etc
@@ -34,6 +35,7 @@ export interface SignOptions {
 @Injectable()
 export class AwsS3Service {
   public s3: S3Client;
+  public s3Url: string;
 
   constructor(private config: S3UploadConfig) {
     this.s3 = new S3Client({
@@ -43,10 +45,16 @@ export class AwsS3Service {
         secretAccessKey: config.secretAccessKey,
       },
     });
+    this.s3Url = `https://${config.bucketName}.s3.${config.region}.amazonaws.com`;
+    if (this.config.prefix) this.s3Url += `/${this.config.prefix}`;
   }
 
   private addPrefix(key: string): string {
     return this.config.prefix ? `${this.config.prefix}/${key}` : key;
+  }
+
+  getFileUrl(key: string) {
+    return path.join(this.s3Url, key);
   }
 
   /**
