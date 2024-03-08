@@ -17,6 +17,7 @@ import { FileUpload } from 'graphql-upload-minimal';
 import * as mime from 'mime-types';
 import 'multer';
 import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface S3UploadConfig {
   prefix?: string; // Exp: dev, prod, etc
@@ -32,10 +33,12 @@ export interface SignOptions {
   contentType?: string;
 }
 
+
 @Injectable()
 export class AwsS3Service {
   public s3: S3Client;
   public s3Url: string;
+  public prefix: string;
 
   constructor(private config: S3UploadConfig) {
     this.s3 = new S3Client({
@@ -46,15 +49,65 @@ export class AwsS3Service {
       },
     });
     this.s3Url = `https://${config.bucketName}.s3.${config.region}.amazonaws.com`;
-    if (this.config.prefix) this.s3Url += `/${this.config.prefix}`;
+    this.prefix = this.config.prefix || '';
+
+    if (this.prefix) {
+      if (!this.prefix.startsWith('/')) {
+        this.prefix = '/' + this.prefix;
+      }
+
+      if (!path.isAbsolute(this.prefix)) {
+        throw new Error('The prefix must be an absolute path');
+      }
+
+      this.s3Url += this.prefix;
+    }
   }
 
   private addPrefix(key: string): string {
-    return this.config.prefix ? `${this.config.prefix}/${key}` : key;
+    this.validateKey(key);
+    return this.prefix ? this.prefix + key : key;
   }
 
-  getFileUrl(key: string) {
-    return path.join(this.s3Url, key);
+  private validateKey(key: string) {
+    if (!path.isAbsolute(key)) {
+      throw new Error('The key must be an absolute path');
+    }
+  }
+
+  /**
+   * Get s3 file URL
+   * @param key
+   * @returns https://bucket-name.s3.region.amazonaws.com/prefix/key
+   */
+  getFileUrl(key?: string | null) {
+    if (!key) return key;
+    if (key.startsWith('/')) return this.s3Url + key;
+    return this.s3Url + '/' + key;
+  }
+
+  /**
+   * Generate s3 file key using uuidv4 and directory
+   * @example: generateUniqueKey('my-image.jpg', 'users', '1', 'profile')
+   * @returns /users/1/profile/<uuidv4>.jpg
+   */
+  generateUniqueKey(filename: string, ...dir: string[]) {
+    let dirPath = path.join(...dir);
+    if (!dirPath.startsWith('/')) dirPath = '/' + dirPath;
+    const ext = path.extname(filename);
+    const uniqueFilename = uuidv4() + ext;
+    return path.join(dirPath, uniqueFilename);
+  }
+
+  /**
+   * Generate s3 file key using actual filename and directory
+   * @example generateFileKey('my-image.jpg', 'users', '1', 'profile')
+   * @returns /users/1/profile/my-image.jpg
+   */
+  generateFileKey(filename: string, ...dir: string[]) {
+    let dirPath = path.join(...dir);
+    if (!dirPath.startsWith('/')) dirPath = '/' + dirPath;
+    return path.join(dirPath, filename);
   }
 
   /**
@@ -109,12 +162,17 @@ export class AwsS3Service {
     return await parallelUploads3.done();
   }
 
+  /**
+   * @param file import { FileUpload } from 'graphql-upload-minimal';
+   * @param key /users/1/profile/avatar.jpg, /groups/1/cover/image.jpg, etc
+   * @param acl public-read | private | public-read-write | authenticated-read | aws-exec-read | bucket-owner-read | bucket-owner-full-control
+   */
   async uploadGqlFile(
-    file: FileUpload,
+    gqlFile: FileUpload,
     key: string,
     acl: ObjectCannedACL = 'public-read'
   ): Promise<CompleteMultipartUploadCommandOutput> {
-    const { filename, mimetype, createReadStream } = await file;
+    const { filename, mimetype, createReadStream } = await gqlFile;
     const contentType = mime.lookup(filename) || mimetype;
     const uploadParams: PutObjectCommandInput = {
       Bucket: this.config.bucketName,

@@ -23,7 +23,7 @@ import { AwsS3Module } from 'nestlibs-aws-s3';
 @Module({
   imports: [
     AwsS3Module.forRoot({
-      prefix: 'test',
+      prefix: 'test', // prefix on bucket (exp: dev, test, staging)
       region: 'us-west-2',
       accessKeyId: 'access-key',
       secretAccessKey: 'secret-key',
@@ -49,18 +49,16 @@ export class AppService {
   }
 
   async uploadFile(file: Express.Multer.File) {
-    // builder will generate a key like 'files/{uuid}.{ext}'
-    const key = new S3KeyBuilder('files').build(null, file.originalname);
+    // /users/1/profile/{uuid}.jpg
+    const key = this.awsS3Service.generateUniqueKey(file.originalname, 'users', userId, 'documents');
     const { Location, Key } = await this.awsS3Service.uploadFile(file);
     return Key;
   }
 
   async uploadAvatarWithPresignedUrl(file: FileUpload, user: User) {
     const { filename } = await file;
-    // builder will generate a key like 'users/1/profile/avatar.jpg'
-    const key = new S3KeyBuilder('users')
-      .module('profile')
-      .build(user.id, filename, 'avatar');
+    // /users/1/profile/{filename}.jpg
+    const key = this.s3.generateFileKey(filename, 'users', user.id);
     const preSignedUrl = this.s3.getSignedUrl(key, 'put', {
       acl: 'public-read',
     });
@@ -69,10 +67,8 @@ export class AppService {
 
   async uploadDocument(file: FileUpload, user: User) {
     const { filename } = await file;
-    // builder will generate a key like 'users/1/documents/{uuid}.pdf'
-    const key = new S3KeyBuilder('users')
-      .module('documents')
-      .build(user.id, filename);
+    // builder will generate a key like 'users/1/documents/{filename}.pdf'
+    const key = this.s3.generateUniqueKey(filename, 'users', user.id, 'documents')
     const { Location, Key } = await this.s3.uploadGqlFile(file, key);
     return Key;
   }
@@ -93,7 +89,7 @@ const UploadFile = () => {
     setSelectedFile(event.target.files[0]);
   };
 
-  const handleUpload = async () => {
+  const uploadWithPresignedUrl = async () => {
     const {
       data: { presignedUrl },
     } = await axios.get('/presigned-url/' + selectedFile.name);
@@ -108,6 +104,21 @@ const UploadFile = () => {
               (progressEvent.loaded * 100) / progressEvent.total
             ),
           }));
+        },
+      });
+      console.log('Upload successful!');
+    } catch (error) {
+      console.error('Upload error:', error);
+    }
+  };
+
+  const uploadFile = async () => {
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    try {
+      await axios.post('/upload-file', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
         },
       });
       console.log('Upload successful!');
