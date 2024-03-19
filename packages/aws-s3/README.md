@@ -57,9 +57,9 @@ export class AppService {
 
   async uploadAvatarWithPresignedUrl(file: FileUpload, user: User) {
     const { filename } = await file;
-    // /users/1/profile/{filename}.jpg
-    const key = this.s3.generateFileKey(filename, 'users', user.id);
-    const preSignedUrl = this.s3.getSignedUrl(key, 'put', {
+    const fileKey = this.s3.fileKey("avatar.jpg", "filename").directory("users", `${user.id}`, "photos").toString();
+    // fileKey: /users/{userId}/profile/avatar.jpg
+    const preSignedUrl = this.s3.getSignedUrl(fileKey, 'put', {
       acl: 'public-read',
     });
     return preSignedUrl;
@@ -67,9 +67,9 @@ export class AppService {
 
   async uploadDocument(file: FileUpload, user: User) {
     const { filename } = await file;
-    // builder will generate a key like 'users/1/documents/{filename}.pdf'
-    const key = this.s3.generateUniqueKey(filename, 'users', user.id, 'documents')
-    const { Location, Key } = await this.s3.uploadGqlFile(file, key);
+    const fileKey = this.s3.fileKey(filename).directory("users", `${user.id}`, "documents").toString();
+    // fileKey: /users/{userId}/documents/{uuid}.pdf
+    const { Location, Key } = await this.s3.uploadGqlFile(file, fileKey);
     return Key;
   }
 }

@@ -33,7 +33,6 @@ export interface SignOptions {
   contentType?: string;
 }
 
-
 @Injectable()
 export class AwsS3Service {
   public s3: S3Client;
@@ -49,19 +48,8 @@ export class AwsS3Service {
       },
     });
     this.s3Url = `https://${config.bucketName}.s3.${config.region}.amazonaws.com`;
-    this.prefix = this.config.prefix || '';
-
-    if (this.prefix) {
-      if (!this.prefix.startsWith('/')) {
-        this.prefix = '/' + this.prefix;
-      }
-
-      if (!path.isAbsolute(this.prefix)) {
-        throw new Error('The prefix must be an absolute path');
-      }
-
-      this.s3Url += this.prefix;
-    }
+    this.prefix = (this.config.prefix || '').replace(/\//g, '');
+    this.s3Url += `/${this.prefix}`;
   }
 
   private addPrefix(key: string): string {
@@ -88,26 +76,34 @@ export class AwsS3Service {
 
   /**
    * Generate s3 file key using uuidv4 and directory
-   * @example: generateUniqueKey('my-image.jpg', 'users', '1', 'profile')
-   * @returns /users/1/profile/<uuidv4>.jpg
+   * @example: fileKey("filename.jpg", "uuid").directory("users", "user-id-1", "photos").toString()
+   * @returns /users/user-id-1/photos/{uuid}.jpg
    */
-  generateUniqueKey(filename: string, ...dir: string[]) {
-    let dirPath = path.join(...dir);
-    if (!dirPath.startsWith('/')) dirPath = '/' + dirPath;
-    const ext = path.extname(filename);
-    const uniqueFilename = uuidv4() + ext;
-    return path.join(dirPath, uniqueFilename);
-  }
+  fileKey(filename: string, type: 'uuid' | 'filename' = 'uuid') {
+    let key = '';
+    let directory = '/';
 
-  /**
-   * Generate s3 file key using actual filename and directory
-   * @example generateFileKey('my-image.jpg', 'users', '1', 'profile')
-   * @returns /users/1/profile/my-image.jpg
-   */
-  generateFileKey(filename: string, ...dir: string[]) {
-    let dirPath = path.join(...dir);
-    if (!dirPath.startsWith('/')) dirPath = '/' + dirPath;
-    return path.join(dirPath, filename);
+    if (type === 'filename') {
+      key = filename;
+    } else {
+      const ext = path.extname(filename);
+      key = uuidv4() + ext;
+    }
+
+    const toString = () => {
+      return path.join(directory, key);
+    };
+
+    return {
+      toString,
+      directory: (...dir: string[]) => {
+        directory = path.join(...dir);
+        if (!directory.startsWith('/')) directory = '/' + directory;
+        return {
+          toString,
+        };
+      },
+    };
   }
 
   /**
