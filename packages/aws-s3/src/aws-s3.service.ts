@@ -10,7 +10,7 @@ import {
   PutObjectCommandInput,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
+import { BodyDataTypes, Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { FileUpload } from 'graphql-upload-minimal';
@@ -156,6 +156,21 @@ export class AwsS3Service {
       params: uploadParams,
     });
     return await parallelUploads3.done();
+  }
+
+  async upload(file: BodyDataTypes, key: string, options?: Partial<PutObjectCommandInput>): Promise<CompleteMultipartUploadCommandOutput> {
+    const uploadParams: PutObjectCommandInput = {
+      Body: file,
+      ACL: "public-read",
+      ...options,
+      Bucket: this.config.bucketName,
+      Key: this.addPrefix(key),
+    };
+    const parallelUploadS3 = new Upload({
+      client: this.s3,
+      params: uploadParams,
+    });
+    return await parallelUploadS3.done();
   }
 
   /**
