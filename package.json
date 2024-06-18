@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "license": "MIT",
   "private": true,
-  "scripts": {},
+  "scripts": {
+    "publish:aws-s3": "npx nx build aws-s3 && npm publish dist/packages/aws-s3 --tag=latest"
+  },
   "devDependencies": {
     "@nestjs/schematics": "^10.0.1",
     "@nestjs/testing": "^10.0.2",

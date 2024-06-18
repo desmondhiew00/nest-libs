@@ -48,19 +48,14 @@ export class AwsS3Service {
       },
     });
     this.s3Url = `https://${config.bucketName}.s3.${config.region}.amazonaws.com`;
+
+    // Exp: /dev, /prod, etc
     this.prefix = (this.config.prefix || '').replace(/\//g, '');
     this.s3Url += `/${this.prefix}`;
   }
 
   private addPrefix(key: string): string {
-    this.validateKey(key);
-    return this.prefix ? this.prefix + key : key;
-  }
-
-  private validateKey(key: string) {
-    if (!path.isAbsolute(key)) {
-      throw new Error('The key must be an absolute path');
-    }
+    return this.prefix ? path.join('/', this.prefix, key) : key;
   }
 
   /**
@@ -74,36 +69,8 @@ export class AwsS3Service {
     return this.s3Url + '/' + key;
   }
 
-  /**
-   * Generate s3 file key using uuidv4 and directory
-   * @example: fileKey("filename.jpg", "uuid").directory("users", "user-id-1", "photos").toString()
-   * @returns /users/user-id-1/photos/{uuid}.jpg
-   */
-  fileKey(filename: string, type: 'uuid' | 'filename' = 'uuid') {
-    let key = '';
-    let directory = '/';
-
-    if (type === 'filename') {
-      key = filename;
-    } else {
-      const ext = path.extname(filename);
-      key = uuidv4() + ext;
-    }
-
-    const toString = () => {
-      return path.join(directory, key);
-    };
-
-    return {
-      toString,
-      directory: (...dir: string[]) => {
-        directory = path.join(...dir);
-        if (!directory.startsWith('/')) directory = '/' + directory;
-        return {
-          toString,
-        };
-      },
-    };
+  createUniqueKey(filename: string) {
+    return `${uuidv4()}${path.extname(filename)}`;
   }
 
   /**
@@ -158,13 +125,18 @@ export class AwsS3Service {
     return await parallelUploads3.done();
   }
 
-  async upload(file: BodyDataTypes, key: string, options?: Partial<PutObjectCommandInput>): Promise<CompleteMultipartUploadCommandOutput> {
+  async upload(
+    file: BodyDataTypes,
+    folder: string,
+    key: string,
+    options?: Partial<PutObjectCommandInput>
+  ): Promise<CompleteMultipartUploadCommandOutput> {
     const uploadParams: PutObjectCommandInput = {
       Body: file,
-      ACL: "public-read",
+      ACL: 'public-read',
       ...options,
       Bucket: this.config.bucketName,
-      Key: this.addPrefix(key),
+      Key: this.addPrefix(path.join('/', folder, key)),
     };
     const parallelUploadS3 = new Upload({
       client: this.s3,
@@ -174,12 +146,14 @@ export class AwsS3Service {
   }
 
   /**
+   * @param folder /users/1234/profile or / for root
    * @param file import { FileUpload } from 'graphql-upload-minimal';
    * @param key /users/1/profile/avatar.jpg, /groups/1/cover/image.jpg, etc
    * @param acl public-read | private | public-read-write | authenticated-read | aws-exec-read | bucket-owner-read | bucket-owner-full-control
    */
   async uploadGqlFile(
     gqlFile: FileUpload,
+    folder: string,
     key: string,
     acl: ObjectCannedACL = 'public-read'
   ): Promise<CompleteMultipartUploadCommandOutput> {
@@ -187,7 +161,7 @@ export class AwsS3Service {
     const contentType = mime.lookup(filename) || mimetype;
     const uploadParams: PutObjectCommandInput = {
       Bucket: this.config.bucketName,
-      Key: this.addPrefix(key),
+      Key: this.addPrefix(path.join('/', folder, key)),
       Body: createReadStream(),
       ContentType: contentType,
       ACL: acl,
