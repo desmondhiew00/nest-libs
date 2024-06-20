@@ -51,11 +51,14 @@ export class AwsS3Service {
 
     // Exp: /dev, /prod, etc
     this.prefix = (this.config.prefix || '').replace(/\//g, '');
-    this.s3Url += `/${this.prefix}`;
+    // this.s3Url += `/${this.prefix}`;
   }
 
   private addPrefix(key: string): string {
-    return this.prefix ? path.join('/', this.prefix, key) : key;
+    let result = this.prefix ? path.join('/', this.prefix, key) : key;
+    // remove first slash
+    if (result.startsWith('/')) result = result.substring(1);
+    return result;
   }
 
   /**
@@ -63,10 +66,10 @@ export class AwsS3Service {
    * @param key
    * @returns https://bucket-name.s3.region.amazonaws.com/prefix/key
    */
-  getFileUrl(key?: string | null) {
+  getFileUrl(key?: string | null, prefix = true) {
     if (!key) return key;
-    if (key.startsWith('/')) return this.s3Url + key;
-    return this.s3Url + '/' + key;
+    if (prefix) return path.join(this.s3Url, this.prefix, key);
+    return path.join(this.s3Url, key);
   }
 
   createUniqueKey(filename: string) {
@@ -107,13 +110,14 @@ export class AwsS3Service {
    */
   async uploadFile(
     file: Express.Multer.File,
+    folder: string,
     key: string,
     acl: ObjectCannedACL = 'public-read'
   ): Promise<CompleteMultipartUploadCommandOutput> {
     const fileType = file.mimetype;
     const uploadParams = {
       Bucket: this.config.bucketName,
-      Key: this.addPrefix(key),
+      Key: this.addPrefix(path.join('/', folder, key)),
       Body: file.buffer,
       ContentType: fileType,
       ACL: acl,

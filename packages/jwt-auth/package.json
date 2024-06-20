@@ -1,21 +1,10 @@
 {
   "name": "nestlibs-jwt-auth",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "dependencies": {
     "@nestjs/common": "^10.3.3",
     "@nestjs/core": "^10.3.3",
     "tslib": "^2.3.0"
-  },
-  "peerDependencies": {
-    "@nestjs/common": "^8.0.0",
-    "@nestjs/core": "^8.0.0",
-    "@nestjs/graphql": "^12.1.1",
-    "@nestjs/jwt": "^10.2.0",
-    "@nestjs/passport": "^10.0.3",
-    "@nestjs/swagger": "^7.3.0",
-    "graphql": "^16.8.1",
-    "passport": "^0.7.0",
-    "passport-jwt": "^4.0.1"
   },
   "type": "commonjs",
   "main": "./src/index.js",

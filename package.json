@@ -4,7 +4,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "publish:aws-s3": "npx nx build aws-s3 && npm publish dist/packages/aws-s3 --tag=latest"
+    "publish:aws-s3": "npx nx build aws-s3 && cd ./dist/packages/aws-s3 && npm publish --tag=latest",
+    "publish:jwt-auth": "npx nx build jwt-auth && npm publish dist/packages/jwt-auth --tag=latest"
   },
   "devDependencies": {
     "@nestjs/schematics": "^10.0.1",
