@@ -35,12 +35,12 @@ export interface SignOptions {
 
 @Injectable()
 export class AwsS3Service {
-  public s3: S3Client;
+  public client: S3Client;
   public s3Url: string;
   public prefix: string;
 
-  constructor(private config: S3UploadConfig) {
-    this.s3 = new S3Client({
+  constructor(public config: S3UploadConfig) {
+    this.client = new S3Client({
       region: config.region,
       credentials: {
         accessKeyId: config.accessKeyId,
@@ -51,7 +51,7 @@ export class AwsS3Service {
 
     // Exp: /dev, /prod, etc
     this.prefix = (this.config.prefix || '').replace(/\//g, '');
-    // this.s3Url += `/${this.prefix}`;
+    // this.clientUrl += `/${this.prefix}`;
   }
 
   private addPrefix(key: string): string {
@@ -101,7 +101,7 @@ export class AwsS3Service {
     } else {
       command = new GetObjectCommand({ Bucket: this.config.bucketName, Key });
     }
-    return getSignedUrl(this.s3, command, { expiresIn });
+    return getSignedUrl(this.client, command, { expiresIn });
   }
 
   /**
@@ -123,7 +123,7 @@ export class AwsS3Service {
       ACL: acl,
     };
     const parallelUploads3 = new Upload({
-      client: this.s3,
+      client: this.client,
       params: uploadParams,
     });
     return await parallelUploads3.done();
@@ -143,7 +143,7 @@ export class AwsS3Service {
       Key: this.addPrefix(path.join('/', folder, key)),
     };
     const parallelUploadS3 = new Upload({
-      client: this.s3,
+      client: this.client,
       params: uploadParams,
     });
     return await parallelUploadS3.done();
@@ -156,7 +156,7 @@ export class AwsS3Service {
    * @param acl public-read | private | public-read-write | authenticated-read | aws-exec-read | bucket-owner-read | bucket-owner-full-control
    */
   async uploadGqlFile(
-    gqlFile: FileUpload,
+    gqlFile: FileUpload | Promise<FileUpload>,
     folder: string,
     key: string,
     acl: ObjectCannedACL = 'public-read'
@@ -171,7 +171,7 @@ export class AwsS3Service {
       ACL: acl,
     };
     const parallelUploadS3 = new Upload({
-      client: this.s3,
+      client: this.client,
       params: uploadParams,
     });
     return await parallelUploadS3.done();
@@ -182,7 +182,7 @@ export class AwsS3Service {
       Bucket: this.config.bucketName,
       Key: key,
     });
-    await this.s3.send(command);
+    await this.client.send(command);
   }
 
   async getFileInfo(key: string): Promise<HeadObjectCommandOutput> {
@@ -190,7 +190,7 @@ export class AwsS3Service {
       Bucket: this.config.bucketName,
       Key: key,
     });
-    return await this.s3.send(command);
+    return await this.client.send(command);
   }
 
   async getFile(key: string): Promise<GetObjectCommandOutput> {
@@ -198,6 +198,6 @@ export class AwsS3Service {
       Bucket: this.config.bucketName,
       Key: key,
     });
-    return await this.s3.send(command);
+    return await this.client.send(command);
   }
 }
